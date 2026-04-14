@@ -32,12 +32,14 @@
             padding-bottom: 10px;
         }
 
-        .handshake-logo {
-            max-width: 600px; /* WAS 250px -- 2.5x larger! */
-            width: 100%;      /* Ensures it scales down on mobile phones */
-            filter: none;     /* WAS grayscale -- Color is back ON! */
-            border: 2px solid #00FF00; /* Slightly thicker green border */
-            margin: 20px 0;   /* More space above and below */
+       .handshake-logo {
+            display: block;
+            max-width: 600px; 
+            width: 90%;      
+            height: auto;
+            filter: none !important; /* Forces color back on */
+            border: 2px solid #00FF00; 
+            margin: 20px auto;   
         }
 
         marquee {
