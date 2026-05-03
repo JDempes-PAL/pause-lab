@@ -422,6 +422,70 @@ footer {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ── HEADER DEMO BUTTON ── */
+.header-demo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+}
+
+.header-demo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: transparent;
+  border: 2px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 18px 40px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 24px rgba(200,134,10,0.12), inset 0 0 24px rgba(200,134,10,0.04);
+}
+
+.header-demo-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(200,134,10,0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.header-demo-btn:hover {
+  box-shadow: 0 0 40px rgba(200,134,10,0.25), inset 0 0 40px rgba(200,134,10,0.08);
+  letter-spacing: 0.3em;
+}
+
+.header-demo-btn:hover::before { opacity: 1; }
+
+.header-demo-label {
+  font-weight: bold;
+}
+
+.header-demo-arrow {
+  font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.header-demo-btn:hover .header-demo-arrow { transform: translateX(6px); }
+
+.header-demo-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: center;
+  max-width: 400px;
+}
+
 /* ── MOBILE ── */
 @media (max-width: 600px) {
   header { padding: 32px 0 28px; }
@@ -444,6 +508,14 @@ footer {
     </div>
     <span class="studio-name">P.A.U.S.E. Alignment Lab</span>
     <p class="tagline">"Measuring the Moral Logic of the Digital Frontier"</p>
+
+    <div class="header-demo-wrap">
+      <a href="thorne.html" class="header-demo-btn">
+        <span class="header-demo-label">Try the Demo</span>
+        <span class="header-demo-arrow">→</span>
+      </a>
+      <p class="header-demo-sub">Sit with Thorne. Answer five questions. Contribute to the research.</p>
+    </div>
   </header>
 
   <!-- MISSION -->
