@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1"/>
+<title>Thorne — Virtue Engine</title>
+<style>
+/* ============================================================
+   BASE
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: #07050a;
+  font-family: 'Courier New', Consolas, 'Lucida Console', monospace;
+  overflow: hidden;
+}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+#app {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#panel-left {
+  flex: 0 0 44%;
+  height: 100%;
+  background: #07050a;
+  position: relative;
+  overflow: hidden;
+}
+
+#panel-left canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+#panel-divider {
+  flex: 0 0 1px;
+  background: #1c1508;
+  height: 100%;
+}
+
+#panel-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #110d05;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+#panel-header {
+  flex: 0 0 auto;
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid #1c1508;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#header-name {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: #c8860a;
+  text-transform: uppercase;
+}
+#header-session {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: #2e2008;
+}
+
+/* ============================================================
+   DIALOGUE LOG
+============================================================ */
+#dialogue-log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 22px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  scroll-behavior: smooth;
+}
+#dialogue-log::-webkit-scrollbar { width: 3px; }
+#dialogue-log::-webkit-scrollbar-track { background: transparent; }
+#dialogue-log::-webkit-scrollbar-thumb { background: #2a1e08; border-radius: 1px; }
+
+.msg-entry { margin-bottom: 20px; }
+.msg-entry--active { margin-bottom: 8px; }
+
+.msg-label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.msg-label--thorne { color: #c8860a; }
+.msg-label--player { color: #8aaa8a; }
+
+.msg-text {
+  font-size: 14px;
+  line-height: 1.75;
+  font-family: inherit;
+  white-space: pre-wrap;
+}
+.msg-text--thorne-story    { color: #b89a6a; }
+.msg-text--thorne-question { color: #c8860a; }
+.msg-text--thorne-reaction { color: #a07828; }
+.msg-text--player          { color: #8aaa8a; }
+
+.typing-cursor {
+  display: inline-block;
+  color: #c8860a;
+  font-size: 10px;
+  vertical-align: middle;
+  margin-left: 1px;
+  animation: cursor-blink 0.65s step-end infinite;
+}
+@keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+/* ============================================================
+   BOTTOM AREA
+============================================================ */
+#bottom-area {
+  flex: 0 0 auto;
+  border-top: 1px solid #1c1508;
+  padding: 12px 18px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+#too-short-msg {
+  font-size: 12px;
+  color: #7a5818;
+  font-style: italic;
+  display: none;
+}
+
+#response-textarea {
+  width: 100%;
+  background: #0d0a03;
+  border: 1px solid #221808;
+  color: #c8a060;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+#response-textarea:focus { border-color: #4a3010; }
+#response-textarea::placeholder { color: #342410; }
+
+#input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#char-count {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #362808;
+  transition: color 0.25s;
+}
+#char-count.ok { color: #c8860a; }
+
+#respond-btn {
+  background: transparent;
+  border: 1px solid #2a1a06;
+  color: #3e2808;
+  padding: 6px 16px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: not-allowed;
+  opacity: 0.4;
+  transition: all 0.18s;
+}
+#respond-btn.active {
+  border-color: #c8860a;
+  color: #c8860a;
+  cursor: pointer;
+  opacity: 1;
+}
+#respond-btn.active:hover { background: rgba(200,134,10,0.08); }
+
+#complete-msg {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #c8860a;
+  text-align: center;
+  padding: 4px 0;
+  border: 1px solid #3a2808;
+  display: none;
+  animation: fade-in 1s ease;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+#status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#progress-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: lowercase;
+  color: #3a2808;
+}
+
+#status-actions { display: flex; gap: 12px; align-items: center; }
+
+.chrome-btn {
+  background: transparent;
+  border: none;
+  color: #4a3010;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.18s;
+}
+.chrome-btn:hover { color: #c8860a; }
+#clear-btn:hover { color: #c84020; }
+#export-btn.highlight {
+  color: #c8860a;
+  letter-spacing: 0.15em;
+  border-bottom: 1px solid #c8860a;
+  padding-bottom: 1px;
+  animation: pulse-export 2s ease-in-out infinite;
+}
+@keyframes pulse-export { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+/* ============================================================
+   MODAL
+============================================================ */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+#modal-overlay.show { display: flex; }
+#modal {
+  background: #110d05;
+  border: 1px solid #2a1e08;
+  padding: 24px 22px;
+  max-width: 320px;
+  width: 100%;
+}
+#modal-text {
+  color: #a07828;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+  font-family: inherit;
+}
+#modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-btn {
+  background: transparent;
+  border: 1px solid #2a1e08;
+  color: #5a4018;
+  padding: 7px 16px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.modal-btn:hover { border-color: #c8860a; color: #c8860a; }
+#modal-confirm-btn { border-color: #5a1808; color: #c84020; }
+#modal-confirm-btn:hover { background: rgba(200,64,32,0.08); border-color: #c84020; }
+
+/* ============================================================
+   MOBILE
+============================================================ */
+@media (max-width: 620px), (orientation: portrait) and (max-width: 900px) {
+  #app { flex-direction: column; }
+  #panel-left { flex: 0 0 220px; width: 100%; height: 220px; }
+  #panel-divider { width: 100%; height: 1px; flex: 0 0 1px; }
+  #panel-right { flex: 1; min-height: 0; }
+  .msg-text { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- LEFT PANEL: campfire scene -->
+  <div id="panel-left">
+    <canvas id="campfire-canvas"></canvas>
+  </div>
+
+  <div id="panel-divider"></div>
+
+  <!-- RIGHT PANEL -->
+  <div id="panel-right">
+
+    <div id="panel-header">
+      <span id="header-name">THORNE</span>
+      <span id="header-session"></span>
+    </div>
+
+    <div id="dialogue-log"></div>
+
+    <div id="bottom-area">
+      <div id="input-section">
+        <p id="too-short-msg">"Say more than that. I've got time, and so do you."</p>
+        <textarea id="response-textarea" placeholder="your response..." rows="3"></textarea>
+        <div id="input-row">
+          <span id="char-count">0 / 20 min</span>
+          <button id="respond-btn" disabled>respond →</button>
+        </div>
+      </div>
+
+      <p id="complete-msg">session recorded — export your results below</p>
+
+      <div id="status-bar">
+        <span id="progress-label"></span>
+        <div id="status-actions">
+          <button class="chrome-btn" id="export-btn">export</button>
+          <button class="chrome-btn" id="clear-btn">clear</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CLEAR CONFIRM MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <p id="modal-text">Wipe all stored session data. Can't be undone.</p>
+    <div id="modal-actions">
+      <button class="modal-btn" id="modal-cancel-btn">cancel</button>
+      <button class="modal-btn" id="modal-confirm-btn">clear all data</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// SCENARIO LIBRARY
+// Edit scenarios here. Do not touch anything below.
+// category tags: care | fairness | loyalty | authority | purity
+// reactions: short (<100 chars) | medium (100-250) | long (>250)
+// Each pool needs at least 2 options. Never evaluate directly.
+// ============================================================
+const SCENARIO_LIBRARY = [
+  {
+    id: "scenario_001",
+    category: "care",
+    story: "Late autumn, maybe two days from a settlement that had taken sick — something hitting the children hard. I'd ridden north to a trading post and back, carried the only medicine they had available. The trader had scraped together everything he had on hand — there was no going back for more. Enough to treat the settlement if I moved fast and kept it whole. On the way back I came across a woman and her two young children camped off the trail. Same illness. She could barely keep herself upright. Her children were worse. The settlement was still a day's ride out and had maybe thirty people counting on what I was carrying. The woman wasn't going to make it to either place in her condition. I had enough medicine to help everyone — but only if I split it. Splitting it meant the settlement got less than the full dose and I couldn't know if that would be enough.",
+    question: "Would you have split the medicine and helped the woman and her children — or kept it whole for the settlement?",
+    minResponseLength: 20,
+    reactions: {
+      short: [
+        "Short answer for a hard mile.",
+        "I've put that to a few people. Not many say it the same way twice."
+      ],
+      medium: [
+        "Either way you're carrying something after. Most people don't think about that part until it's already done.",
+        "There's no clean answer to it. You found one you could live with. That's about all anyone manages out here."
+      ],
+      long: [
+        "You thought through the whole of it. Most folks grab one end and pull. You looked at what was on both sides first.",
+        "That's a careful accounting. Whether it's right I couldn't tell you. But it's honest, and that counts for something."
+      ]
+    }
+  },
+  {
+    id: "scenario_002",
+    category: "fairness",
+    story: "Came across two men squared off on an open stretch of trail — not throwing hands yet, but close. One had the other's horse by the reins and wasn't letting go. I pulled up and asked what the trouble was. First man said the horse had been stolen from him three weeks prior. Described the animal in detail — and then showed me something. There was a small scar on the inside of the horse's left foreleg, hidden under the fur. You had to push the coat back to see it clearly. He knew exactly where it was and described the shape of it before I even looked. Said it happened when the horse caught itself on a fence post two winters ago. He remembered the day. The second man produced a receipt from a trading post four days east — said he'd bought the horse legal, paid fair price, had the paper to prove it. Both men looked me in the eye. Neither one blinked.",
+    question: "Would you have sided with the man who knew the horse — or the man who had the paper?",
+    minResponseLength: 20,
+    reactions: {
+      short: [
+        "Not many clean answers to that one.",
+        "I've seen that road go both ways. Neither one ends easy."
+      ],
+      medium: [
+        "The law says paper. The gut says something else. Most decisions out here live in the space between those two things.",
+        "Whoever you chose, the other man walked away believing he was wronged. That's the part that follows you."
+      ],
+      long: [
+        "You worked through both sides of it before you landed. Most people pick the one that feels right and stop there.",
+        "That's a careful way of looking at it. The trail doesn't always give you the luxury of being certain before you have to act."
+      ]
+    }
+  },
+  {
+    id: "scenario_003",
+    category: "loyalty",
+    story: "Rode with a man named Cole for five years. Good hand, kept his word, pulled me out of a flash flood in a canyon outside Santa Fe — had no reason to risk himself and did it anyway. Man I trusted completely. Then one afternoon at a way-station I watched him slip a coin purse out of another rider's saddlebag while the man's back was turned. Clean and quick. Cole didn't know I saw it. The other rider never noticed. We rode out an hour later like nothing happened.",
+    question: "Would you have confronted Cole — or let it slide?",
+    minResponseLength: 20,
+    reactions: {
+      short: [
+        "Loyalty doesn't come with a rulebook. Neither does what you just said.",
+        "Short answer to a long knot."
+      ],
+      medium: [
+        "Either way something changes after a moment like that. Most people don't account for that part when they make the call.",
+        "Trust and what's right pull in different directions sometimes. The hard part is they both feel like the same thing until they don't."
+      ],
+      long: [
+        "You looked at all the threads before you pulled. Most folks just pick one and go.",
+        "That's a careful working of it. Whether it's right I couldn't say. But you didn't look away from the hard part of it."
+      ]
+    }
+  },
+  {
+    id: "scenario_004",
+    category: "authority",
+    story: "Was riding with a group of six — not my outfit, I'd joined up two weeks back heading the same direction. The man leading us knew the territory better than anyone. We'd been on short rations for four days by then, half portions to stretch what we had until the next settlement. Two hunting parties had come back empty. The math wasn't working in our favor. On the third morning we passed a man walking alone on the trail — no horse, moving slow, carrying almost nothing. He looked like he hadn't eaten in longer than us. The leader didn't break stride. Said we couldn't afford to slow down or share what little we had left. Said it plainly, no cruelty in it — just the numbers. The rest of the group looked straight ahead. I was at the back of the line.",
+    question: "Would you have stopped for the man — or ridden on with the group?",
+    minResponseLength: 20,
+    reactions: {
+      short: [
+        "I've seen men go both ways on something like that. The ones who stopped and the ones who didn't.",
+        "Short answer. The trail has a way of making things simple that aren't."
+      ],
+      medium: [
+        "Whatever you chose, someone pays for it. That's the part the leader understood that not everyone wants to sit with.",
+        "There's what you owe a stranger and there's what you owe the people riding with you. Most days those aren't the same thing."
+      ],
+      long: [
+        "You thought through the weight of both sides before you answered. Most people know what they'd do before they finish hearing the question.",
+        "That's an honest accounting of it. The leader wasn't wrong in his math. That's what makes it hard."
+      ]
+    }
+  },
+  {
+    id: "scenario_005",
+    category: "purity",
+    story: "I'd wintered at a small semi-permanent camp a few times over the years — maybe fifteen people, same families returning to the same spot each season. They knew me well enough. Their custom was simple: strangers didn't stay inside the camp without someone vouching for them personally. Not unfriendly, just careful. It was how they'd kept themselves safe. You were in or you were out — there was no in-between, no leaving someone at the edge with a blanket. A man was sitting outside the camp when I arrived — injured, horse gone, said he'd taken a bad fall two miles back. He needed a place to sleep and something to eat. He asked me to vouch for him. I didn't know him. While I was helping him get steady on his feet a locket slipped out of his coat and hit the ground. I picked it up to hand it back. Gold. Well made. On the back it was engraved — To my beloved Clara — with a date from earlier that year. I opened it. Inside was a small portrait of a couple. Neither of them was the man standing in front of me. He took it back and said, quiet and a little too quick — it uh, belonged to my sister. Then he looked at me and waited.",
+    question: "Would you have vouched for him — or told him you couldn't speak to his character?",
+    minResponseLength: 20,
+    reactions: {
+      short: [
+        "Not much middle ground in that one.",
+        "I've thought about that night more than I'd like to admit."
+      ],
+      medium: [
+        "Your word means something in a camp like that. Once you spend it you don't get it back the same way.",
+        "Could be he had an explanation that made sense. Could be he didn't. You had to decide before you knew which."
+      ],
+      long: [
+        "You worked through what you knew and what you didn't before you answered. That's more than most people do when the moment's on them.",
+        "That's the honest shape of it. You're not deciding about him — you're deciding about what your word is worth and what you can live with after."
+      ]
+    }
+  }
+];
+// ============================================================
+// END SCENARIO LIBRARY
+// ============================================================
+
+// ── Constants ────────────────────────────────────────────────
+
+const INTRO_LINE =
+  "Sit down. I've got some things I want to ask you about. Things I've seen out on the trail that still sit with me. Before I ask what you'd have done — I'm going to tell you everything I knew at the time. Same information I had. No more, no less. Then I want to hear what you think.";
+
+const CLOSING_LINE =
+  "Appreciate you sitting with me a while. These things don't get easier to think about. But they're worth thinking about.";
+
+const DEFLECTION_TEXT =
+  "Told you all I knew at the time. No more, no less. What would you have done?";
+
+const STORAGE_KEY = "virtue_engine_logs_v1";
+
+// ── Utilities ────────────────────────────────────────────────
+
+function generateSessionId() {
+  return "sess_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getStoredLogs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function appendLog(entry) {
+  const logs = getStoredLogs();
+  logs.push(entry);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+}
+
+function exportLogs() {
+  const logs = getStoredLogs();
+  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "virtue_engine_" + Date.now() + ".json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function selectReaction(responseLength, reactions, usedSet) {
+  const pool =
+    responseLength < 100 ? reactions.short :
+    responseLength <= 250 ? reactions.medium :
+    reactions.long;
+  const unused = pool.filter(r => !usedSet.has(r));
+  const candidates = unused.length > 0 ? unused : pool;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function seededRng(seed) {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
+}
+
+// ── Campfire Canvas ──────────────────────────────────────────
+
+(function initCampfire() {
+  const canvas = document.getElementById("campfire-canvas");
+  const container = document.getElementById("panel-left");
+  let animId = 0;
+  let startTime = null;
+
+  const stars = Array.from({ length: 48 }, (_, i) => ({
+    x: seededRng(i * 1.31 + 0.1) * 76 + 2,
+    y: seededRng(i * 2.77 + 0.9) * 54 + 1,
+    size: seededRng(i * 4.13) > 0.72 ? 2 : 1,
+    brightness: 0.45 + seededRng(i * 6.07) * 0.55,
+    phase: seededRng(i * 8.91) * Math.PI * 2,
+  }));
+
+  const tlProfile = [
+    5,6,7,8,9,10,11,12,13,14,14,13,12,11,10,
+    9,8,7,6,7,8,9,10,11,12,13,14,15,16,17,
+    18,19,20,21,22,23,22,21,20,19,18,17,16,
+    15,14,13,12,13,14,15,16,17,18,17,16,15,
+    14,13,12,11,12,13,14,15,16,17,18,17,16,
+    15,14,13,12,11,10,9,10,11,10,9,8,7,
+  ];
+
+  function draw(ts) {
+    if (startTime === null) startTime = ts;
+    const t = (ts - startTime) / 1000;
+
+    const W = container.clientWidth;
+    const H = container.clientHeight;
+    if (canvas.width !== W) canvas.width = W;
+    if (canvas.height !== H) canvas.height = H;
+    if (W === 0 || H === 0) { animId = requestAnimationFrame(draw); return; }
+
+    const ctx = canvas.getContext("2d");
+    const GW = 80, GH = 120;
+    const pw = W / GW, ph = H / GH;
+    ctx.imageSmoothingEnabled = false;
+
+    const g = (gx, gy, gw, gh, color, alpha) => {
+      if (alpha !== undefined && alpha < 1) ctx.globalAlpha = alpha;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(gx * pw), Math.round(gy * ph), Math.max(1, Math.round(gw * pw)), Math.max(1, Math.round(gh * ph)));
+      if (alpha !== undefined && alpha < 1) ctx.globalAlpha = 1;
+    };
+
+    // Sky
+    ctx.fillStyle = "#07050a";
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    for (const s of stars) {
+      const twinkle = 0.5 + 0.5 * Math.sin(t * 1.1 + s.phase);
+      ctx.globalAlpha = Math.min(0.9, twinkle * s.brightness);
+      ctx.fillStyle = "#ffe8c8";
+      ctx.fillRect(Math.round(s.x * pw), Math.round(s.y * ph), s.size, s.size);
+      ctx.globalAlpha = 1;
+    }
+
+    // Treeline
+    const tlBase = 77;
+    for (let xi = 0; xi < GW; xi++) {
+      const pi = Math.min(tlProfile.length - 1, Math.floor(xi / GW * tlProfile.length));
+      const rise = tlProfile[pi] || 6;
+      const topY = tlBase - rise;
+      g(xi, topY, 1, tlBase - topY + 2, "#0a0807");
+    }
+
+    // Ground
+    for (let gy = 70; gy <= GH; gy++) {
+      const gt = (gy - 70) / (GH - 70);
+      const r = Math.round(16 + gt * 16);
+      const gr = Math.round(10 + gt * 8);
+      const b = Math.round(3 + gt * 2);
+      ctx.fillStyle = `rgb(${r},${gr},${b})`;
+      ctx.fillRect(0, Math.round(gy * ph), W, Math.round(ph) + 1);
+    }
+
+    g(4, 88, 14, 2, "#0e0904", 0.5);
+    g(60, 84, 12, 2, "#0c0803", 0.4);
+    g(34, 92, 10, 1, "#0f0a04", 0.4);
+
+    // Log seat
+    const logY = 77;
+    g(4, logY, 72, 6, "#2c1c0c");
+    g(4, logY, 72, 2, "#3e2810");
+    g(4, logY + 5, 72, 1, "#1e0e06");
+    g(2, logY - 1, 4, 8, "#241408");
+    g(74, logY - 1, 4, 8, "#241408");
+    g(10, logY + 2, 20, 1, "#321e0c", 0.4);
+    g(40, logY + 3, 18, 1, "#321e0c", 0.3);
+
+    // ── THORNE (right, broader — mockup silhouette style) ──
+    const tX = 52;
+    const sitY = logY;
+    const thorneGlow = 0.28 + 0.14 * Math.sin(t * 3.3 + 0.8);
+    const tC = "#161008"; // coat color
+    const tCS = "#1e1508"; // coat highlight
+    // Legs dangling (thighs horizontal on log, shins down)
+    g(tX + 2, sitY - 2, 8, 3, tC);        // left thigh
+    g(tX + 10, sitY - 2, 8, 3, tC);       // right thigh
+    g(tX + 2, sitY + 1, 6, 8, "#100c06"); // left shin down
+    g(tX + 11, sitY + 1, 6, 8, "#100c06");// right shin down
+    g(tX + 1, sitY + 8, 8, 3, "#0c0804"); // left boot
+    g(tX + 10, sitY + 8, 8, 3, "#0c0804");// right boot
+    // Torso
+    g(tX, sitY - 20, 20, 18, tC);
+    g(tX, sitY - 20, 20, 4, tCS);         // shoulder band
+    // Left arm — resting forward, elbow bent toward fire
+    g(tX - 5, sitY - 18, 6, 4, tC);       // upper arm left
+    g(tX - 8, sitY - 14, 5, 4, tC);       // forearm angled down-forward
+    g(tX - 9, sitY - 10, 4, 3, "#1a1208");// hand
+    // Right arm — resting on knee
+    g(tX + 20, sitY - 18, 6, 4, tC);      // upper arm right
+    g(tX + 23, sitY - 14, 5, 4, tC);      // forearm
+    g(tX + 24, sitY - 11, 4, 3, "#1a1208");// hand on knee
+    // Head
+    g(tX + 4, sitY - 30, 12, 10, "#2a1c10");
+    // Hat crown
+    g(tX + 3, sitY - 40, 14, 11, "#0e0c08");
+    // Hat brim — wide
+    g(tX - 6, sitY - 30, 32, 3, "#0c0a07");
+    g(tX - 5, sitY - 28, 30, 1, "#080706");
+    // Fire glow on Thorne
+    g(tX - 9, sitY - 40, 34, 50, "#c85000", thorneGlow * 0.07);
+
+    // ── PLAYER (left, smaller — mockup silhouette style) ──
+    const pX = 10;
+    const playerGlow = 0.22 + 0.11 * Math.sin(t * 2.9 + 1.5);
+    const pC = "#141008";
+    // Legs dangling
+    g(pX + 2, sitY - 2, 6, 3, pC);        // left thigh
+    g(pX + 8, sitY - 2, 6, 3, pC);        // right thigh
+    g(pX + 2, sitY + 1, 5, 7, "#0e0a05"); // left shin
+    g(pX + 9, sitY + 1, 5, 7, "#0e0a05"); // right shin
+    g(pX + 1, sitY + 7, 7, 3, "#0a0703"); // left boot
+    g(pX + 8, sitY + 7, 7, 3, "#0a0703"); // right boot
+    // Torso
+    g(pX + 1, sitY - 17, 16, 15, pC);
+    g(pX + 1, sitY - 17, 16, 3, "#1c1208"); // shoulder
+    // Left arm — forward toward fire
+    g(pX - 3, sitY - 15, 5, 4, pC);
+    g(pX - 5, sitY - 11, 4, 4, pC);
+    g(pX - 6, sitY - 8, 3, 3, "#181008");
+    // Right arm — resting on knee
+    g(pX + 17, sitY - 15, 5, 4, pC);
+    g(pX + 19, sitY - 11, 4, 4, pC);
+    g(pX + 20, sitY - 8, 3, 3, "#181008");
+    // Head
+    g(pX + 3, sitY - 26, 11, 9, "#241a0e");
+    // Hat
+    g(pX + 2, sitY - 34, 12, 9, "#0e0c08");
+    // Hat brim
+    g(pX - 3, sitY - 26, 23, 2, "#0c0a07");
+    // Fire glow on player
+    g(pX - 6, sitY - 34, 28, 44, "#c85000", playerGlow * 0.06);
+
+    // Fire pit
+    const fireX = 37, fireBaseY = 75;
+    g(fireX - 7, fireBaseY - 2, 4, 3, "#2c200e");
+    g(fireX - 4, fireBaseY - 1, 3, 2, "#362814");
+    g(fireX + 4, fireBaseY - 2, 5, 3, "#2c200e");
+    g(fireX + 2, fireBaseY - 1, 3, 2, "#362814");
+    g(fireX - 2, fireBaseY, 13, 2, "#221a0c");
+    g(fireX - 4, fireBaseY - 1, 16, 2, "#3a1800", 0.7);
+    g(fireX - 2, fireBaseY - 1, 12, 1, "#5a2400", 0.6);
+    g(fireX - 5, fireBaseY - 1, 6, 2, "#2a1608", 0.8);
+    g(fireX + 2, fireBaseY - 1, 6, 2, "#2a1608", 0.8);
+
+    // Animated flames
+    const fireFlameH = 21;
+    for (let fx = fireX - 6; fx <= fireX + 6; fx++) {
+      const dist = Math.abs(fx - fireX);
+      const maxH = Math.floor(fireFlameH * Math.max(0.1, 1 - dist * 0.08));
+      const nv = Math.sin(fx * 1.8 + t * 4.2) * 0.38 +
+                 Math.sin(fx * 2.9 + t * 2.6 + 1.4) * 0.28 +
+                 Math.sin(t * 6.8 + fx * 0.7) * 0.18;
+      const colH = Math.max(1, Math.floor(maxH * (0.62 + 0.38 * nv)));
+      for (let fy = 0; fy < colH; fy++) {
+        const frac = fy / colH;
+        const r = 255;
+        const gr = Math.floor(frac * frac * 210 + (1 - frac * frac) * 45);
+        const b = frac > 0.75 ? Math.floor((frac - 0.75) * 4 * 60) : 0;
+        const alpha = Math.max(0.08, 0.85 + 0.15 * (1 - frac) - dist * 0.025);
+        ctx.globalAlpha = Math.min(1, alpha);
+        ctx.fillStyle = `rgb(${r},${gr},${b})`;
+        const ypos = fireBaseY - 1 - fy;
+        ctx.fillRect(Math.round(fx * pw), Math.round(ypos * ph), Math.max(1, Math.round(pw)) + 1, Math.max(1, Math.round(ph)) + 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+
+    g(fireX - 3, fireBaseY - 1, 9, 2, "#FF5000", 0.9);
+    g(fireX - 1, fireBaseY - 1, 5, 1, "#FFAA00", 0.85);
+    g(fireX, fireBaseY - 1, 3, 1, "#FFE000", 0.7);
+
+    // Embers
+    for (let e = 0; e < 6; e++) {
+      const ep = ((t * 0.7 + e * 0.29) % 1);
+      const ex = fireX + Math.sin(ep * Math.PI * 3 + e * 1.7) * 5;
+      const ey = fireBaseY - 2 - ep * 20;
+      if (ep < 0.88) g(ex, ey, 1, 1, "#FF8800", Math.max(0, 0.8 * (1 - ep)));
+    }
+
+    // Fire glow
+    const gCX = (fireX + 0.5) * pw;
+    const gCY = (fireBaseY - 8) * ph;
+    const gR = Math.min(W, H) * 0.75;
+    const glowPulse = 0.16 + 0.05 * Math.sin(t * 2.1) + 0.03 * Math.sin(t * 5.3);
+    const grd = ctx.createRadialGradient(gCX, gCY, 0, gCX, gCY, gR);
+    grd.addColorStop(0, `rgba(255,90,5,${glowPulse})`);
+    grd.addColorStop(0.25, `rgba(200,50,0,${glowPulse * 0.45})`);
+    grd.addColorStop(0.55, `rgba(110,25,0,${glowPulse * 0.15})`);
+    grd.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    // Vignette
+    const vig = ctx.createRadialGradient(W/2, H*0.65, 0, W/2, H*0.65, Math.max(W,H)*0.85);
+    vig.addColorStop(0, "rgba(0,0,0,0)");
+    vig.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, W, H);
+
+    animId = requestAnimationFrame(draw);
+  }
+
+  requestAnimationFrame(draw);
+})();
+
+// ── App State ────────────────────────────────────────────────
+
+const sessionId = generateSessionId();
+const scenarios = shuffle(SCENARIO_LIBRARY);
+let currentIndex = 0;
+let appPhase = "intro"; // intro | story | question | reaction | complete
+let promptStartTime = 0;
+const usedReactions = new Set();
+let typewriterTimer = null;
+
+// ── DOM Refs ─────────────────────────────────────────────────
+
+const dialogueLog    = document.getElementById("dialogue-log");
+const inputSection   = document.getElementById("input-section");
+const tooShortMsg    = document.getElementById("too-short-msg");
+const textarea       = document.getElementById("response-textarea");
+const charCount      = document.getElementById("char-count");
+const respondBtn     = document.getElementById("respond-btn");
+const completeMsg    = document.getElementById("complete-msg");
+const progressLabel  = document.getElementById("progress-label");
+const exportBtn      = document.getElementById("export-btn");
+const clearBtn       = document.getElementById("clear-btn");
+const modalOverlay   = document.getElementById("modal-overlay");
+const modalCancelBtn = document.getElementById("modal-cancel-btn");
+const modalConfirmBtn= document.getElementById("modal-confirm-btn");
+const headerSession  = document.getElementById("header-session");
+
+headerSession.textContent = sessionId.slice(5, 21);
+
+// ── Dialogue Rendering ───────────────────────────────────────
+
+function scrollToBottom() {
+  dialogueLog.scrollTop = dialogueLog.scrollHeight;
+}
+
+function addCommittedMessage(type, text) {
+  const entry = document.createElement("div");
+  entry.className = "msg-entry";
+
+  const isPlayer = type === "player";
+  const label = document.createElement("span");
+  label.className = "msg-label " + (isPlayer ? "msg-label--player" : "msg-label--thorne");
+  label.textContent = isPlayer ? "YOU" : "THORNE";
+
+  const p = document.createElement("p");
+  p.className = "msg-text msg-text--" + type;
+  p.textContent = text;
+
+  entry.appendChild(label);
+  entry.appendChild(p);
+  dialogueLog.appendChild(entry);
+  scrollToBottom();
+}
+
+function typewriterAppend(type, text, speed, delay, onDone) {
+  if (typewriterTimer) clearTimeout(typewriterTimer);
+
+  const entry = document.createElement("div");
+  entry.className = "msg-entry msg-entry--active";
+
+  const isPlayer = type === "player";
+  const label = document.createElement("span");
+  label.className = "msg-label " + (isPlayer ? "msg-label--player" : "msg-label--thorne");
+  label.textContent = isPlayer ? "YOU" : "THORNE";
+
+  const p = document.createElement("p");
+  p.className = "msg-text msg-text--" + type;
+
+  const cursor = document.createElement("span");
+  cursor.className = "typing-cursor";
+  cursor.textContent = "█";
+
+  entry.appendChild(label);
+  entry.appendChild(p);
+  dialogueLog.appendChild(entry);
+  scrollToBottom();
+
+  let i = 0;
+
+  function tick() {
+    i++;
+    p.textContent = text.slice(0, i);
+    p.appendChild(cursor);
+
+    const nearBottom = dialogueLog.scrollTop + dialogueLog.clientHeight >= dialogueLog.scrollHeight - 60;
+    if (nearBottom) scrollToBottom();
+
+    if (i < text.length) {
+      typewriterTimer = setTimeout(tick, speed);
+    } else {
+      cursor.remove();
+      entry.className = "msg-entry";
+      if (onDone) setTimeout(onDone, delay || 0);
+    }
+  }
+
+  typewriterTimer = setTimeout(tick, delay || 0);
+}
+
+// ── Phase Controllers ────────────────────────────────────────
+
+function startIntro() {
+  appPhase = "intro";
+  updateUI();
+  typewriterAppend("thorne-story", INTRO_LINE, 28, 0, () => {
+    setTimeout(startStory, 2000);
+  });
+}
+
+function startStory() {
+  appPhase = "story";
+  updateUI();
+  const scenario = scenarios[currentIndex];
+  typewriterAppend("thorne-story", scenario.story, 28, 0, () => {
+    setTimeout(startQuestion, 1500);
+  });
+}
+
+function startQuestion() {
+  appPhase = "question";
+  updateUI();
+  const scenario = scenarios[currentIndex];
+  typewriterAppend("thorne-question", scenario.question, 28, 0, () => {
+    promptStartTime = Date.now();
+    textarea.focus();
+  });
+}
+
+function startReaction(reactionText) {
+  appPhase = "reaction";
+  updateUI();
+  typewriterAppend("thorne-reaction", reactionText, 24, 600, () => {
+    setTimeout(advanceScenario, 1500);
+  });
+}
+
+function advanceScenario() {
+  const nextIndex = currentIndex + 1;
+  if (nextIndex >= scenarios.length) {
+    // All done
+    appendLog({
+      sessionId,
+      scenarioId: "session_complete",
+      category: "meta",
+      prompt: "session_complete",
+      response: "completed",
+      responseTime: 0,
+      timestamp: new Date().toISOString()
+    });
+    appPhase = "complete";
+    updateUI();
+    typewriterAppend("thorne-story", CLOSING_LINE, 28, 0, () => {});
+  } else {
+    // Clear log for next scenario, advance
+    dialogueLog.innerHTML = "";
+    currentIndex = nextIndex;
+    startStory();
+  }
+}
+
+// ── Submit Handler ────────────────────────────────────────────
+
+function handleSubmit() {
+  if (appPhase !== "question") return;
+  const trimmed = textarea.value.trim();
+  const scenario = scenarios[currentIndex];
+
+  // Deflection check — short question ending in ?
+  if (trimmed.length < 60 && trimmed.endsWith("?")) {
+    textarea.value = "";
+    updateCharCount();
+    addCommittedMessage("thorne-reaction", DEFLECTION_TEXT);
+    textarea.focus();
+    return;
+  }
+
+  // Min length check
+  if (trimmed.length < scenario.minResponseLength) {
+    tooShortMsg.style.display = "block";
+    return;
+  }
+
+  tooShortMsg.style.display = "none";
+  const elapsed = Date.now() - promptStartTime;
+
+  // Log response
+  appendLog({
+    sessionId,
+    scenarioId: scenario.id,
+    category: scenario.category,
+    prompt: scenario.question,
+    response: trimmed,
+    responseTime: elapsed,
+    timestamp: new Date().toISOString()
+  });
+
+  // Commit player message to log FIRST, then clear input
+  addCommittedMessage("player", trimmed);
+  textarea.value = "";
+  updateCharCount();
+
+  // Hide input while reaction plays
+  inputSection.style.display = "none";
+
+  // Pick reaction
+  const reaction = selectReaction(trimmed.length, scenario.reactions, usedReactions);
+  usedReactions.add(reaction);
+
+  // Double rAF ensures browser paints player message before reaction starts
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      startReaction(reaction);
+    });
+  });
+}
+
+// ── UI Updates ────────────────────────────────────────────────
+
+function updateUI() {
+  const scenario = scenarios[currentIndex];
+  const isQuestion = appPhase === "question";
+  const isComplete = appPhase === "complete";
+
+  // Input section visibility
+  inputSection.style.display = isQuestion ? "flex" : "none";
+  tooShortMsg.style.display = "none";
+
+  // Complete message
+  completeMsg.style.display = isComplete ? "block" : "none";
+
+  // Export highlight
+  if (isComplete) {
+    exportBtn.classList.add("highlight");
+  }
+
+  // Progress label
+  if (appPhase === "intro") {
+    progressLabel.textContent = "";
+  } else if (isComplete) {
+    progressLabel.textContent = "session complete";
+  } else {
+    progressLabel.textContent = `scenario ${currentIndex + 1} of ${scenarios.length}`;
+  }
+}
+
+function updateCharCount() {
+  const scenario = scenarios[currentIndex];
+  const minLen = scenario ? scenario.minResponseLength : 20;
+  const len = textarea.value.length;
+  const meetsMin = len >= minLen;
+
+  charCount.textContent = len + " / " + minLen + " min";
+  charCount.classList.toggle("ok", meetsMin);
+  respondBtn.disabled = !meetsMin;
+  respondBtn.classList.toggle("active", meetsMin);
+
+  if (meetsMin) tooShortMsg.style.display = "none";
+}
+
+// ── Event Listeners ──────────────────────────────────────────
+
+textarea.addEventListener("input", updateCharCount);
+
+textarea.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    handleSubmit();
+  }
+});
+
+respondBtn.addEventListener("click", handleSubmit);
+
+exportBtn.addEventListener("click", exportLogs);
+
+clearBtn.addEventListener("click", () => {
+  modalOverlay.classList.add("show");
+});
+
+modalCancelBtn.addEventListener("click", () => {
+  modalOverlay.classList.remove("show");
+});
+
+modalConfirmBtn.addEventListener("click", () => {
+  localStorage.removeItem(STORAGE_KEY);
+  modalOverlay.classList.remove("show");
+});
+
+modalOverlay.addEventListener("click", (e) => {
+  if (e.target === modalOverlay) modalOverlay.classList.remove("show");
+});
+
+// ── Boot ─────────────────────────────────────────────────────
+
+updateUI();
+startIntro();
+
+</script>
+</body>
+</html>
